@@ -1,4 +1,3 @@
-
 /*!
  * pickadate.js v3.4.0, 2014/02/15
  * By Amsul, http://amsul.ca
@@ -28,20 +27,20 @@ function PickerConstructor( ELEMENT, NAME, COMPONENT, OPTIONS ) {
     // If there’s no element, return the picker constructor.
     if ( !ELEMENT ) return PickerConstructor
 
-	var SETTINGS;
-	
-	// Merge the defaults and options passed.
-	if (COMPONENT) {
-		SETTINGS = COMPONENT.defaults;
-		angular.extend(SETTINGS, OPTIONS);
-	} else {
-		SETTINGS = OPTIONS || {};
-	}
-	
-	// Merge the default classes with the settings classes.
-	var CLASSES = PickerConstructor.klasses();
-	angular.extend(CLASSES, SETTINGS.klass);
-	
+        var SETTINGS;
+
+        // Merge the defaults and options passed.
+        if (COMPONENT) {
+                SETTINGS = COMPONENT.defaults;
+                angular.extend(SETTINGS, OPTIONS);
+        } else {
+                SETTINGS = OPTIONS || {};
+        }
+
+        // Merge the default classes with the settings classes.
+        var CLASSES = PickerConstructor.klasses();
+        angular.extend(CLASSES, SETTINGS.klass);
+
 
     var
         // The state of the picker.
@@ -112,7 +111,7 @@ function PickerConstructor( ELEMENT, NAME, COMPONENT, OPTIONS ) {
                 // Insert the root as specified in the settings.
                 if ( SETTINGS.container ) {
                   angular.element( SETTINGS.container ).append( P.$root )
-                } 
+                }
                 else {
                   $ELEMENT.after( P.$root )
                 }
@@ -160,7 +159,47 @@ function PickerConstructor( ELEMENT, NAME, COMPONENT, OPTIONS ) {
                 return P.trigger( 'render' )
             }, //render
 
+            attachLiveEvents: function() {
+                // If there’s a click on an actionable element, carry out the actions.
+                var selector = P.$root[0].querySelectorAll('[data-pick], [data-nav], [data-clear]');
+                angular.element(selector).on('click', function() {
 
+                var $target = angular.element(this),
+                    targetDisabled = $target.hasClass(CLASSES.navDisabled) || $target.hasClass(CLASSES.disabled),
+
+                    // * For IE, non-focusable elements can be active elements as well
+                    //   (http://stackoverflow.com/a/2684561).
+                    activeElement = document.activeElement
+                    activeElement = activeElement && (activeElement.type || activeElement.href) && activeElement
+
+                    // If it’s disabled or nothing inside is actively focused, re-focus the element.
+                    if (targetDisabled || activeElement && !P.$root[0].contains(activeElement)) {
+                      ELEMENT.focus()
+                    }
+
+                    // If something is superficially changed, update the `highlight` based on the `nav`.
+                    if ($target.attr('data-nav') && !targetDisabled) {
+                    P.set('highlight', P.component.item.highlight, {
+                      nav: parseInt($target.attr('data-nav'))
+                    })
+                  // P.attachLiveEvents();
+                }
+
+                // If something is picked, set `select` then close with focus.
+                else if (PickerConstructor._.isInteger(parseInt($target.attr('data-pick'))) && !targetDisabled) {
+                  P.set('select', parseInt($target.attr('data-pick'))).close(true)
+                  //P.attachLiveEvents();
+                }
+
+              // If a “clear” button is pressed, empty the values and close with focus.
+              else if ($target.attr('data-clear')) {
+                P.clear();
+                P.close(true);
+                //P.attachLiveEvents();
+              }
+
+            });
+          },
             /**
              * Destroy everything
              */
@@ -229,7 +268,7 @@ function PickerConstructor( ELEMENT, NAME, COMPONENT, OPTIONS ) {
                     $ELEMENT.triggerHandler( 'focus' )
 
                     // Bind the document events.
-					angular.element(document.querySelectorAll('#' + STATE.id)).on('click focusin', function( event ) {
+                    angular.element(document.querySelectorAll('#' + STATE.id)).on('click focusin', function( event ) {
                         var target = event.target;
 
                         // If the target of the event is not the element, close the picker picker.
@@ -247,8 +286,8 @@ function PickerConstructor( ELEMENT, NAME, COMPONENT, OPTIONS ) {
                         }
 
                     });
-					
-					angular.element(document.querySelectorAll('#' + STATE.id)).on( 'keydown', function( event ) {
+
+                    angular.element(document.querySelectorAll('#' + STATE.id)).on( 'keydown', function( event ) {
 
                         var
                             // Get the keycode.
@@ -309,8 +348,9 @@ function PickerConstructor( ELEMENT, NAME, COMPONENT, OPTIONS ) {
                     // ....ah yes! It would’ve been incomplete without a crazy workaround for IE :|
                     // The focus is triggered *after* the close has completed - causing it
                     // to open again. So unbind and rebind the event at the next tick.
-                    $ELEMENT.off( 'focus.' + STATE.id );
-					$ELEMENT.triggerHandler( 'focus' );
+                    //$ELEMENT.off( 'focus.' + STATE.id );
+                    $ELEMENT.triggerHandler( 'focus' );
+                    $ELEMENT.off( 'focus', focusToOpen );
                     setTimeout( function() {
                         angular.element(document.querySelectorAll('#' + STATE.id)).on( 'focus', focusToOpen )
                     }, 0 )
@@ -334,8 +374,10 @@ function PickerConstructor( ELEMENT, NAME, COMPONENT, OPTIONS ) {
                 }, 1000);
 
                 // Unbind the document events.
-                $document.off( '.' + STATE.id )
+                //$document.off( '.' + STATE.id )
 
+                //changed for ie8 focus events
+                $ELEMENT.off( 'focus', focusToOpen );
                 // Trigger the queued “close” events.
                 return P.trigger( 'close' )
             }, //close
@@ -359,7 +401,7 @@ function PickerConstructor( ELEMENT, NAME, COMPONENT, OPTIONS ) {
                     thingObject = thingIsObject ? thing : {}
 
                 // Make sure we have usable options.
-                options = thingIsObject && angular.isObject( value ) ? value : options || {}
+                options = thingIsObject && angular.isObject( value ) ? value : options || {}
 
                 if ( thing ) {
 
@@ -383,7 +425,7 @@ function PickerConstructor( ELEMENT, NAME, COMPONENT, OPTIONS ) {
                         if ( thingItem == 'select' || thingItem == 'clear' ) {
                             $ELEMENT[0].value = thingItem == 'clear' ?
                                 '' : P.get( thingItem, SETTINGS.format );
-							$ELEMENT.triggerHandler('change');
+                            $ELEMENT.triggerHandler('change');
                         }
                     }
 
@@ -538,224 +580,192 @@ function PickerConstructor( ELEMENT, NAME, COMPONENT, OPTIONS ) {
      * Prepare the input element with all bindings.
      */
     function prepareElement() {
-		// Store the picker data by component name.
+                // Store the picker data by component name.
         $ELEMENT.data(NAME, P);
 
         // Add the “input” class name.
         $ELEMENT.addClass(CLASSES.input)
-		
-		// If there’s a `data-value`, update the value of the element.
-		$ELEMENT[0].value = $ELEMENT.attr('data-value') ?
-			P.get('select', SETTINGS.format) :
-			ELEMENT.value;
+                
+                // If there’s a `data-value`, update the value of the element.
+                $ELEMENT[0].value = $ELEMENT.attr('data-value') ?
+                        P.get('select', SETTINGS.format) :
+                        ELEMENT.value;
 
-		// On focus/click, open the picker and adjust the root “focused” state.
-		angular.element(document.querySelectorAll('#' + STATE.id)).on('focus', focusToOpen);
-		angular.element(document.querySelectorAll('#' + STATE.id)).on('click', focusToOpen);
-		
-        // Only bind keydown events if the element isn’t editable.
-        if ( !SETTINGS.editable ) {
+                // On focus/click, open the picker and adjust the root “focused” state.
+                angular.element(document.querySelectorAll('#' + STATE.id)).on('focus', focusToOpen);
+                angular.element(document.querySelectorAll('#' + STATE.id)).on('click', focusToOpen);
+               /* edited to close when clicked outside of calender */
+               //changed for ie8
+               if (!/MSIE 8/i.test(navigator.userAgent)) {
+                 angular.element(document.querySelectorAll('#' + STATE.id)).on('blur', P.close);
+               } else {
+                 angular.element(document.querySelectorAll('#' + STATE.id)).on('onfocusout', P.close);
+               }
+
+          /* for calender to stick to input on scroll */
+          /*angular.element(document.querySelectorAll('#rc-crosssell-inner')).on('scroll', function(e){
+        P.$root[0].style.top = (P.$root[0].scrollTop + (P.$root[0].firstChild.scrollHeight  + 24)) - e.currentTarget.scrollTop +'px';
+      });*/
+
+          // Only bind keydown events if the element isn’t editable.
+          if (!SETTINGS.editable) {
 
             // Handle keyboard event based on the picker being opened or not.
             angular.element(document.querySelectorAll('#' + STATE.id)).on('keydown', function(event) {
 
-                var keycode = event.keyCode,
+              var keycode = event.keyCode,
 
-                    // Check if one of the delete keys was pressed.
-                    isKeycodeDelete = /^(8|46)$/.test(keycode)
+                // Check if one of the delete keys was pressed.
+                isKeycodeDelete = /^(8|46)$/.test(keycode)
 
-                // For some reason IE clears the input value on “escape”.
-                if ( keycode == 27 ) {
-                    P.close()
-                    return false
+              // For some reason IE clears the input value on “escape”.
+              if (keycode == 27) {
+                P.close()
+                return false
+              }
+
+              // Check if `space` or `delete` was pressed or the picker is closed with a key movement.
+              if (keycode == 32 || isKeycodeDelete || !STATE.open && P.component.key[keycode]) {
+
+                // Prevent it from moving the page and bubbling to doc.
+                event.preventDefault()
+                event.stopPropagation()
+
+                // If `delete` was pressed, clear the values and close the picker.
+                // Otherwise open the picker.
+                if (isKeycodeDelete) {
+                  P.clear().close()
+                } else {
+                  P.open()
                 }
-
-                // Check if `space` or `delete` was pressed or the picker is closed with a key movement.
-                if ( keycode == 32 || isKeycodeDelete || !STATE.open && P.component.key[keycode] ) {
-
-                    // Prevent it from moving the page and bubbling to doc.
-                    event.preventDefault()
-                    event.stopPropagation()
-
-                    // If `delete` was pressed, clear the values and close the picker.
-                    // Otherwise open the picker.
-                    if ( isKeycodeDelete ) { P.clear().close() }
-                    else { P.open() }
-                }
+              }
             })
-        }
+          }
 
 
-        // Update the aria attributes.
-        aria(ELEMENT, {
+          // Update the aria attributes.
+          aria(ELEMENT, {
             haspopup: true,
             expanded: false,
             readonly: false,
             owns: ELEMENT.id + '_root' + (P._hidden ? ' ' + P._hidden.id : '')
-        })
-    }
+          })
+        } //end prepareElement
 
 
-    /**
-     * Prepare the root picker element with all bindings.
-     */
-    function prepareElementRoot() {
-		// When something within the root is focused, stop from bubbling
-		// to the doc and remove the “focused” state from the root.	
-        P.$root.on('focusin', function( event ) {
-			P.$root.removeClass( CLASSES.focused )
-			aria( P.$root[0], 'selected', false )
-			event.stopPropagation()
-		});
-	
-		// When something within the root holder is clicked, stop it
+      /**
+       * Prepare the root picker element with all bindings.
+       */
+      function prepareElementRoot() {
+        // When something within the root is focused, stop from bubbling
+        // to the doc and remove the “focused” state from the root. 
+        P.$root.on('focusin', function(event) {
+          P.$root.removeClass(CLASSES.focused)
+          aria(P.$root[0], 'selected', false)
+          event.stopPropagation()
+        });
+
+        // When something within the root holder is clicked, stop it
         // from bubbling to the doc.
-        P.$root.on('mousedown click', function( event ) {
-			
-			var target = event.target
+        P.$root.on('mousedown click', function(event) {
+          var target = event.target
+            // Make sure the target isn’t the root holder so it can bubble up.
+          if (target != P.$root.children()[0]) {
 
-			// Make sure the target isn’t the root holder so it can bubble up.
-			if ( target != P.$root.children()[ 0 ] ) {
+            event.stopPropagation()
 
-				event.stopPropagation()
+            // * For mousedown events, cancel the default action in order to
+            //   prevent cases where focus is shifted onto external elements
+            //   when using things like jQuery mobile or MagnificPopup (ref: #249 & #120).
+            //   Also, for Firefox, don’t prevent action on the `option` element.
+            if (event.type == 'mousedown' && angular.element(target)[0].tagName !== 'input' && target.nodeName != 'OPTION') {
 
-				// * For mousedown events, cancel the default action in order to
-				//   prevent cases where focus is shifted onto external elements
-				//   when using things like jQuery mobile or MagnificPopup (ref: #249 & #120).
-				//   Also, for Firefox, don’t prevent action on the `option` element.
-				if ( event.type == 'mousedown' && angular.element( target )[0].tagName !== 'input' && target.nodeName != 'SELECT' && target.nodeName != 'OPTION' ) {
+              event.preventDefault()
 
-					event.preventDefault()
+              // Re-focus onto the element so that users can click away
+              // from elements focused within the picker.
+              ELEMENT.focus()
+            }
 
-					// Re-focus onto the element so that users can click away
-					// from elements focused within the picker.
-					ELEMENT.focus()
-				}
-			} else if ( event.type == 'click' && P.get('open') ) {
-				P.close();
-			}
-		});
+          }
+        });
 
-        function attachLiveEvents() {
-            // If there’s a click on an actionable element, carry out the actions.
-            angular.element(P.$root[0].querySelectorAll('[data-pick], [data-nav], [data-clear], [data-close]')).on('click', function() {
-                var $target = angular.element( this ),
-                    targetDisabled = $target.hasClass( CLASSES.navDisabled ) || $target.hasClass( CLASSES.disabled ),
+        P.attachLiveEvents();
 
-                // * For IE, non-focusable elements can be active elements as well
-                //   (http://stackoverflow.com/a/2684561).
-                    activeElement = document.activeElement
-                activeElement = activeElement && ( activeElement.type || activeElement.href ) && activeElement
-
-                // If it’s disabled or nothing inside is actively focused, re-focus the element.
-                if ( targetDisabled || activeElement && !P.$root[0].contains(activeElement) ) {
-                    ELEMENT.focus()
-                }
-
-                // If something is superficially changed, update the `highlight` based on the `nav`.
-                if ( $target.attr('data-nav') && !targetDisabled ) {
-                    P.set( 'highlight', P.component.item.highlight, { nav: parseInt($target.attr('data-nav')) } )
-                    attachLiveEvents();
-                }
-
-                // If something is picked, set `select` then close with focus.
-                else if ( PickerConstructor._.isInteger( parseInt($target.attr('data-pick')) ) && !targetDisabled ) {
-                    P.set( 'select', parseInt($target.attr('data-pick')) ).close( true )
-                    attachLiveEvents();
-                }
-
-                // If a “clear” button is pressed, empty the values and close with focus.
-                else if ( $target.attr('data-clear') ) {
-                    P.clear().close( true )
-                    attachLiveEvents();
-                }
-
-                // If a "close" button is pressed, close with focus.
-                else if ( $target.attr('data-close') ) {
-                    P.close( true );
-                    attachLiveEvents();
-                }
-
-            });
-        }
-		
-		attachLiveEvents();
-		
-        aria( P.$root[0], 'hidden', true )
-    }
+        aria(P.$root[0], 'hidden', true)
+      }
 
 
-     /**
-      * Prepare the hidden input element along with all bindings.
-      */
-    function prepareElementHidden() {
+      /**
+       * Prepare the hidden input element along with all bindings.
+       */
+      function prepareElementHidden() {
 
         var id = [
-            typeof SETTINGS.hiddenPrefix == 'string' ? SETTINGS.hiddenPrefix : '',
-            typeof SETTINGS.hiddenSuffix == 'string' ? SETTINGS.hiddenSuffix : '_submit'
+          typeof SETTINGS.hiddenPrefix == 'string' ? SETTINGS.hiddenPrefix : '',
+          typeof SETTINGS.hiddenSuffix == 'string' ? SETTINGS.hiddenSuffix : '_submit'
         ]
 
         P._hidden = angular.element(
-            '<input ' +
-            'type=hidden ' +
+          '<input ' +
+          'type=hidden ' +
 
-            // Create the name and ID by using the original
-            // input’s with a prefix and suffix.
-            'name="' + id[0] + ELEMENT.name + id[1] + '"' +
-            'id="' + id[0] + ELEMENT.id + id[1] + '"' +
+          // Create the name and ID by using the original
+          // input’s with a prefix and suffix.
+          'name="' + id[0] + ELEMENT.name + id[1] + '"' +
+          'id="' + id[0] + ELEMENT.id + id[1] + '"' +
 
-            // If the element has a value, set the hidden value as well.
-            (
-                $ELEMENT.attr('data-value') || ELEMENT.value ?
-                    ' value="' + P.get('select', SETTINGS.formatSubmit) + '"' :
-                    ''
-            ) +
-            '>'
+          // If the element has a value, set the hidden value as well.
+          (
+            $ELEMENT.attr('data-value') || ELEMENT.value ?
+            ' value="' + P.get('select', SETTINGS.formatSubmit) + '"' :
+            ''
+          ) +
+          '>'
         )[0]
 
         $ELEMENT.
 
-            // If the value changes, update the hidden input with the correct format.
-            on('change.' + STATE.id, function() {
-                P._hidden.value = ELEMENT.value ?
-                    P.get('select', SETTINGS.formatSubmit) :
-                    ''
-            }).
+        // If the value changes, update the hidden input with the correct format.
+        on('change.' + STATE.id, function() {
+          P._hidden.value = ELEMENT.value ?
+            P.get('select', SETTINGS.formatSubmit) :
+            ''
+        }).
 
-            // Insert the hidden input after the element.
-            after(P._hidden)
-    }
+        // Insert the hidden input after the element.
+        after(P._hidden)
+      }
 
 
-    // Separated for IE
-    function focusToOpen( event ) {
-
+      // Separated for IE
+      function focusToOpen(event) {
         // Stop the event from propagating to the doc.
         event.stopPropagation()
 
         // If it’s a focus event, add the “focused” class to the root.
-        if ( event.type == 'focus' ) {
-            P.$root.addClass( CLASSES.focused )
-            aria( P.$root[0], 'selected', true )
+        if (event.type == 'focus') {
+          P.$root.addClass(CLASSES.focused)
+          aria(P.$root[0], 'selected', true)
         }
 
         // And then finally open the picker.
         P.open()
-    }
+      }
 
 
-    // Return a new picker instance.
-    return new PickerInstance()
-} //PickerConstructor
+      // Return a new picker instance.
+      return new PickerInstance()
+    } //PickerConstructor
 
 
 
-/**
- * The default classes and prefix to use for the HTML classes.
- */
-PickerConstructor.klasses = function( prefix ) {
-    prefix = prefix || 'picker'
-    return {
+  /**
+   * The default classes and prefix to use for the HTML classes.
+   */
+  PickerConstructor.klasses = function(prefix) {
+      prefix = prefix || 'picker'
+      return {
 
         picker: prefix,
         opened: prefix + '--opened',
@@ -770,71 +780,71 @@ PickerConstructor.klasses = function( prefix ) {
         wrap: prefix + '__wrap',
 
         box: prefix + '__box'
-    }
-} //PickerConstructor.klasses
+      }
+    } //PickerConstructor.klasses
 
 
 
-/**
- * PickerConstructor helper methods.
- */
-PickerConstructor._ = {
+  /**
+   * PickerConstructor helper methods.
+   */
 
-    /**
-     * Create a group of nodes. Expects:
-     * `
-        {
-            min:    {Integer},
-            max:    {Integer},
-            i:      {Integer},
-            node:   {String},
-            item:   {Function}
-        }
-     * `
-     */
-    group: function( groupObject ) {
+  PickerConstructor._ = {
+
+      /**
+         * Create a group of nodes. Expects:
+         * `
+            {
+                min:    {Integer},
+                max:    {Integer},
+                i:      {Integer},
+                node:   {String},
+                item:   {Function}
+            }
+         * `
+         */
+      group: function(groupObject) {
 
         var
-            // Scope for the looped object
-            loopObjectScope,
+        // Scope for the looped object
+          loopObjectScope,
 
-            // Create the nodes list
-            nodesList = '',
+          // Create the nodes list
+          nodesList = '',
 
-            // The counter starts from the `min`
-            counter = PickerConstructor._.trigger( groupObject.min, groupObject )
+          // The counter starts from the `min`
+          counter = PickerConstructor._.trigger(groupObject.min, groupObject)
 
 
         // Loop from the `min` to `max`, incrementing by `i`
-        for ( ; counter <= PickerConstructor._.trigger( groupObject.max, groupObject, [ counter ] ); counter += groupObject.i ) {
+        for (; counter <= PickerConstructor._.trigger(groupObject.max, groupObject, [counter]); counter += groupObject.i) {
 
-            // Trigger the `item` function within scope of the object
-            loopObjectScope = PickerConstructor._.trigger( groupObject.item, groupObject, [ counter ] )
+          // Trigger the `item` function within scope of the object
+          loopObjectScope = PickerConstructor._.trigger(groupObject.item, groupObject, [counter])
 
-            // Splice the subgroup and create nodes out of the sub nodes
-            nodesList += PickerConstructor._.node(
-                groupObject.node,
-                loopObjectScope[ 0 ],   // the node
-                loopObjectScope[ 1 ],   // the classes
-                loopObjectScope[ 2 ]    // the attributes
-            )
+          // Splice the subgroup and create nodes out of the sub nodes
+          nodesList += PickerConstructor._.node(
+            groupObject.node,
+            loopObjectScope[0], // the node
+            loopObjectScope[1], // the classes
+            loopObjectScope[2] // the attributes
+          )
         }
 
         // Return the list of nodes
         return nodesList
-    }, //group
+      }, //group
 
-
-    /**
-     * Create a dom node string
-     */
-    node: function( wrapper, item, klass, attribute ) {
+      /**
+       * Create a dom node string
+       */
+      node: function(wrapper, item, klass, attribute) {
 
         // If the item is false-y, just return an empty string
-        if ( !item ) return ''
+        if (!item) return ''
 
         // If the item is an array, do a join
-        item = $.isArray( item ) ? item.join( '' ) : item
+        item = $.isArray(item) ? item.join('') : item
 
         // Check for the class
         klass = klass ? ' class="' + klass + '"' : ''
@@ -844,132 +854,132 @@ PickerConstructor._ = {
 
         // Return the wrapped item
         return '<' + wrapper + klass + attribute + '>' + item + '</' + wrapper + '>'
-    }, //node
+      }, //node
 
 
-    /**
-     * Lead numbers below 10 with a zero.
-     */
-    lead: function( number ) {
-        return ( number < 10 ? '0': '' ) + number
-    },
+      /**
+       * Lead numbers below 10 with a zero.
+       */
+      lead: function(number) {
+        return (number < 10 ? '0' : '') + number
+      },
 
 
-    /**
-     * Trigger a function otherwise return the value.
-     */
-    trigger: function( callback, scope, args ) {
-        return typeof callback == 'function' ? callback.apply( scope, args || [] ) : callback
-    },
+      /**
+       * Trigger a function otherwise return the value.
+       */
+      trigger: function(callback, scope, args) {
+        return typeof callback == 'function' ? callback.apply(scope, args || []) : callback
+      },
 
 
-    /**
-     * If the second character is a digit, length is 2 otherwise 1.
-     */
-    digits: function( string ) {
-        return ( /\d/ ).test( string[ 1 ] ) ? 2 : 1
-    },
+      /**
+       * If the second character is a digit, length is 2 otherwise 1.
+       */
+      digits: function(string) {
+        return (/\d/).test(string[1]) ? 2 : 1
+      },
 
 
-    /**
-     * Tell if something is a date object.
-     */
-    isDate: function( value ) {
-        return {}.toString.call( value ).indexOf( 'Date' ) > -1 && this.isInteger( value.getDate() )
-    },
+      /**
+       * Tell if something is a date object.
+       */
+      isDate: function(value) {
+        return {}.toString.call(value).indexOf('Date') > -1 && this.isInteger(value.getDate())
+      },
 
 
-    /**
-     * Tell if something is an integer.
-     */
-    isInteger: function( value ) {
-        return {}.toString.call( value ).indexOf( 'Number' ) > -1 && value % 1 === 0
-    },
+      /**
+       * Tell if something is an integer.
+       */
+      isInteger: function(value) {
+        return {}.toString.call(value).indexOf('Number') > -1 && value % 1 === 0
+      },
 
 
-    /**
-     * Create ARIA attribute strings.
-     */
-    ariaAttr: ariaAttr
-} //PickerConstructor._
+      /**
+       * Create ARIA attribute strings.
+       */
+      ariaAttr: ariaAttr
+    } //PickerConstructor._
 
 
 
-/**
- * Extend the picker with a component and defaults.
- */
-PickerConstructor.extend = function( name, Component ) {
+  /**
+   * Extend the picker with a component and defaults.
+   */
+  PickerConstructor.extend = function(name, Component) {
 
-    // Extend jQuery.
-    angular.element.prototype[ name ] = function( options, action ) {
+      // Extend jQuery.
+      angular.element.prototype[name] = function(options, action) {
 
         // Grab the component data.
-        var componentData = this.data( name )
+        var componentData = this.data(name)
 
         // If the picker is requested, return the data object.
-        if ( options == 'picker' ) {
-            return componentData
+        if (options == 'picker') {
+          return componentData
         }
 
         // If the component data exists and `options` is a string, carry out the action.
-        if ( componentData && typeof options == 'string' ) {
-            PickerConstructor._.trigger( componentData[ options ], componentData, [ action ] )
-            return this
+        if (componentData && typeof options == 'string') {
+          PickerConstructor._.trigger(componentData[options], componentData, [action])
+          return this
         }
 
         // Otherwise go through each matched element and if the component
         // doesn’t exist, create a new picker using `this` element
         // and merging the defaults and options with a deep copy.
-		for (var i = 0; i < this.length; i++) {
-			var element = angular.element(this[i]);
-		    if ( !element.data( name ) ) {
-                new PickerConstructor( element[0], name, Component, options )
-            }
-		}
-    }
-
-    // Set the defaults.
-    angular.element.prototype[ name ].defaults = Component.defaults
-} //PickerConstructor.extend
-
-
-
-function aria(element, attribute, value) {
-    if ( angular.isObject(attribute) ) {
-        for ( var key in attribute ) {
-            ariaSet(element, key, attribute[key])
+        for (var i = 0; i < this.length; i++) {
+          var element = angular.element(this[i]);
+          if (!element.data(name)) {
+            new PickerConstructor(element[0], name, Component, options)
+          }
         }
+      }
+
+      // Set the defaults.
+      angular.element.prototype[name].defaults = Component.defaults
+    } //PickerConstructor.extend
+
+
+
+  function aria(element, attribute, value) {
+    if (angular.isObject(attribute)) {
+      for (var key in attribute) {
+        ariaSet(element, key, attribute[key])
+      }
+    } else {
+      ariaSet(element, attribute, value)
     }
-    else {
-        ariaSet(element, attribute, value)
-    }
-}
-function ariaSet(element, attribute, value) {
+  }
+
+  function ariaSet(element, attribute, value) {
     angular.element(element).attr(
-        (attribute == 'role' ? '' : 'aria-') + attribute,
-        value
+      (attribute == 'role' ? '' : 'aria-') + attribute,
+      value
     )
-}
-function ariaAttr(attribute, data) {
-    if ( !angular.isObject(attribute) ) {
-        attribute = { attribute: data }
+  }
+
+  function ariaAttr(attribute, data) {
+    if (!angular.isObject(attribute)) {
+      attribute = {
+        attribute: data
+      }
     }
     data = ''
-    for ( var key in attribute ) {
-        var attr = (key == 'role' ? '' : 'aria-') + key,
-            attrVal = attribute[key]
-        data += attrVal == null ? '' : attr + '="' + attribute[key] + '"'
+    for (var key in attribute) {
+      var attr = (key == 'role' ? '' : 'aria-') + key,
+        attrVal = attribute[key]
+      data += attrVal == null ? '' : attr + '="' + attribute[key] + '"'
     }
     return data
-}
+  }
 
 
 
-// Expose the picker constructor.
-return PickerConstructor
+  // Expose the picker constructor.
+  return PickerConstructor
 
 
 }));
-
-
-
